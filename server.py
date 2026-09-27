@@ -9,7 +9,7 @@ import json
 from datetime import date, timedelta
 
 import mysql.connector
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # ── DB config (set these as environment variables) ─────────────────────────────
 DB_CONFIG = {
@@ -24,7 +24,7 @@ def get_conn():
     return mysql.connector.connect(**DB_CONFIG)
 
 # ── MCP Server ─────────────────────────────────────────────────────────────────
-mcp = FastMCP(
+mcp = MCPServer(
     name="Supply Chain MCP Server",
     instructions=(
         "You are a supply chain assistant. Use the available tools to check "

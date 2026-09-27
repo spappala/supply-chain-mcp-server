@@ -25,7 +25,7 @@ def get_conn():
 
 # ── MCP Server ─────────────────────────────────────────────────────────────────
 mcp = MCPServer(
-    name="Supply Chain MCP Server",
+    name="SupplyChainMCPServer",
     instructions=(
         "You are a supply chain assistant. Use the available tools to check "
         "warehouse stock levels, run demand forecasts, and place vendor purchase orders."

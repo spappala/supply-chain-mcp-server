@@ -30,11 +30,6 @@ mcp = MCPServer(
         "You are a supply chain assistant. Use the available tools to check "
         "warehouse stock levels, run demand forecasts, and place vendor purchase orders."
     ),
-    # Run stateless with plain-JSON responses so strict MCP clients (e.g. the
-    # MuleSoft Agent Broker) don't rely on session-id correlation over SSE,
-    # which was causing discarded responses and 60s broker timeouts.
-    stateless_http=True,
-    json_response=True,
 )
 
 # ── Tool 1: Check Warehouse Stock ──────────────────────────────────────────────
@@ -243,4 +238,13 @@ def place_vendor_order(sku: str, quantity: int, notes: str = "") -> str:
 
 # ── Run ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)
+    # Stateless + plain-JSON responses so strict MCP clients (e.g. the MuleSoft
+    # Agent Broker) don't depend on session-id correlation over SSE, which was
+    # causing discarded responses and 60s broker timeouts.
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=8000,
+        stateless_http=True,
+        json_response=True,
+    )

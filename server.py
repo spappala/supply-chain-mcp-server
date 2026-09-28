@@ -236,6 +236,61 @@ def place_vendor_order(sku: str, quantity: int, notes: str = "") -> str:
     }, default=str)
 
 
+# ── Tool 4: Get Open Purchase Orders ───────────────────────────────────────────
+@mcp.tool()
+def get_open_purchase_orders(sku: str) -> str:
+    """
+    List OPEN (in-flight) purchase orders for a SKU — orders with status DRAFT,
+    SUBMITTED, CONFIRMED, or SHIPPED (i.e. not yet RECEIVED or CANCELLED). Use this
+    to check for outstanding commitments against a vendor contract before deciding
+    whether the contract can be safely cancelled.
+
+    Args:
+        sku: The product SKU code to check (e.g. HFLX-2026)
+    """
+    conn = get_conn()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT sku, name FROM products WHERE sku = %s", (sku,))
+    product = cursor.fetchone()
+    if not product:
+        cursor.close(); conn.close()
+        return json.dumps({"error": f"SKU '{sku}' not found."})
+
+    cursor.execute("""
+        SELECT po.po_number, po.quantity, po.unit_cost, po.total_cost, po.status,
+               po.order_date, po.expected_date, v.name AS vendor_name
+        FROM purchase_orders po
+        JOIN vendors v ON po.vendor_id = v.id
+        WHERE po.sku = %s
+          AND po.status IN ('DRAFT', 'SUBMITTED', 'CONFIRMED', 'SHIPPED')
+        ORDER BY po.order_date
+    """, (sku,))
+    open_pos = cursor.fetchall()
+
+    cursor.close(); conn.close()
+
+    open_quantity = sum(int(p["quantity"]) for p in open_pos)
+    open_value    = sum(float(p["total_cost"]) for p in open_pos)
+
+    return json.dumps({
+        "sku":                  sku,
+        "product_name":         product["name"],
+        "open_po_count":        len(open_pos),
+        "open_quantity":        open_quantity,
+        "open_value":           open_value,
+        "open_purchase_orders": open_pos,
+        "summary": (
+            f"{len(open_pos)} open purchase order(s) totalling {open_quantity} units "
+            f"(${open_value:,.2f}) are still in flight against this SKU. These are "
+            f"outstanding commitments to consider before cancelling the contract."
+            if open_pos
+            else f"No open purchase orders for {sku}. There are no outstanding "
+                 f"in-flight commitments blocking a contract cancellation."
+        )
+    }, default=str)
+
+
 # ── Run ────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     # Stateless + plain-JSON responses so strict MCP clients (e.g. the MuleSoft

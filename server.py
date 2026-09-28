@@ -30,6 +30,11 @@ mcp = MCPServer(
         "You are a supply chain assistant. Use the available tools to check "
         "warehouse stock levels, run demand forecasts, and place vendor purchase orders."
     ),
+    # Run stateless with plain-JSON responses so strict MCP clients (e.g. the
+    # MuleSoft Agent Broker) don't rely on session-id correlation over SSE,
+    # which was causing discarded responses and 60s broker timeouts.
+    stateless_http=True,
+    json_response=True,
 )
 
 # ── Tool 1: Check Warehouse Stock ──────────────────────────────────────────────
